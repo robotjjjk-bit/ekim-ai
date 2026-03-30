@@ -301,7 +301,7 @@ private fun ModelRow(
 @Preview(showBackground = true, backgroundColor = 0xFFF5F5F5)
 @Composable
 fun ModelSelectorPreview() {
-    var selected: ModelInfo by remember { mutableStateOf(ModelsManager.currentModel.value) }
+    var selected: ModelInfo by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
     MaterialTheme {
         Box(
             modifier = Modifier

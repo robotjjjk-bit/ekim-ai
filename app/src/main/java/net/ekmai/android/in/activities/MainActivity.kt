@@ -42,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +57,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import kotlinx.coroutines.launch
 import net.ekmai.android.`in`.components.AiModel
 import net.ekmai.android.`in`.components.MessageField
 import net.ekmai.android.`in`.components.ModelSelectorDropdown
 import net.ekmai.android.`in`.ui.theme.EkmAITheme
+import net.ekmai.android.`in`.utilities.ApiManager
+import net.ekmai.android.`in`.utilities.LinkedList
+import net.ekmai.android.`in`.utilities.Message
 import net.ekmai.android.`in`.utilities.ModelsManager
 import net.ekmai.android.`in`.utilities.NetworkObserver
 
@@ -81,12 +86,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val context: Context = LocalContext.current
-    var selectedModel by remember { mutableStateOf(ModelsManager.currentModel.value) }
+    var selectedModel by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
     var showSelector by remember { mutableStateOf(false) }
     val networkObserver = remember { NetworkObserver(context) }
     val isNetworkAvailable by networkObserver.observe()
         .collectAsState(initial = networkObserver.isConnected())
+    val coroutineScope = rememberCoroutineScope()
     var menuExpanded by remember { mutableStateOf(false) }
+    var response by remember { mutableStateOf(". . .") }
+    val chatList = LinkedList()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -222,7 +230,14 @@ fun MainScreen() {
                     onModelClick = {
                         showSelector = (!showSelector)
                     },
-                    onSend = {},
+                    onSend = { txt ->
+                        coroutineScope.launch {
+                            chatList.addMessage(Message(txt, true))
+                            val reply = ApiManager.sendMessage(chatList)
+                            chatList.addMessage(Message(reply, false))
+                            response = chatList.toList().joinToString("\n") { it.text }
+                        }
+                    },
                     onVoice = {},
                     isError = !isNetworkAvailable,
                     errorMessage = if (!isNetworkAvailable) "Network not available" else "Something went wrong. Please try again."
@@ -238,7 +253,9 @@ fun MainScreen() {
                 horizontalAlignment = Alignment.End
             ) {
                 item {
-
+                    Text(
+                        text = response
+                    )
                 }
             }
         }
