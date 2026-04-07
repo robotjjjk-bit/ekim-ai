@@ -18,21 +18,23 @@ object ApiManager {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    suspend fun sendMessage(
-        chatList: LinkedList
-    ): String = withContext(Dispatchers.IO) {
+    suspend fun sendMessage(chatList: LinkedList): String = withContext(Dispatchers.IO) {
         val model = ModelsManager.getCurrentModel()
+        var lastError = ""
 
-        try {
-            when (model.type) {
-                "google" -> return@withContext handleGoogle(model, chatList)
-                "openai" -> return@withContext handleOpenAI(model, chatList)
-                else -> return@withContext "Unsupported Model"
+        for (attempt in 0..2) {
+            try {
+                return@withContext when (model.type) {
+                    "google" -> handleGoogle(model, chatList)
+                    "openai" -> handleOpenAI(model, chatList)
+                    else -> return@withContext "Unsupported Model"
+                }
+            } catch (e: Exception) {
+                lastError = e.message ?: "Unknown error"
+                if (attempt < 2) kotlinx.coroutines.delay(1000L * (attempt + 1))
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return@withContext "Error: ${e.message}"
         }
+        return@withContext "Error: $lastError"
     }
 
     fun handleOpenAI(model: ModelInfo, chatList: LinkedList): String {

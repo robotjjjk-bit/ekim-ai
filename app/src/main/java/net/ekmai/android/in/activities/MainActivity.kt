@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
@@ -35,14 +34,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,16 +59,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
 import net.ekmai.android.`in`.components.AiModel
+import net.ekmai.android.`in`.components.ChatMessageList
 import net.ekmai.android.`in`.components.MessageField
 import net.ekmai.android.`in`.components.ModelSelectorDropdown
 import net.ekmai.android.`in`.ui.theme.EkmAITheme
-import net.ekmai.android.`in`.utilities.ApiManager
-import net.ekmai.android.`in`.utilities.LinkedList
-import net.ekmai.android.`in`.utilities.Message
 import net.ekmai.android.`in`.utilities.ModelsManager
 import net.ekmai.android.`in`.utilities.NetworkObserver
+import net.ekmai.android.`in`.utilities.ChatViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,18 +85,40 @@ class MainActivity : ComponentActivity() {
 @Preview(showSystemUi = true)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    chatViewModel: ChatViewModel = viewModel()
+) {
     val context: Context = LocalContext.current
+    val uiState by chatViewModel.uiState.collectAsState()
+
     var selectedModel by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
     var showSelector by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
+
     val networkObserver = remember { NetworkObserver(context) }
     val isNetworkAvailable by networkObserver.observe()
         .collectAsState(initial = networkObserver.isConnected())
-    val coroutineScope = rememberCoroutineScope()
-    var menuExpanded by remember { mutableStateOf(false) }
-    var response by remember { mutableStateOf(". . .") }
-    val chatList = LinkedList()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            chatViewModel.clearError()
+        }
+    }
+
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -117,10 +140,13 @@ fun MainScreen() {
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            selectedModel.tintColor, selectedModel.tintColor
+                                .then(
+                                    Modifier.background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                selectedModel.tintColor,
+                                                selectedModel.tintColor
+                                            )
                                         )
                                     )
                                 )
@@ -146,7 +172,6 @@ fun MainScreen() {
                                 contentDescription = "More options"
                             )
                         }
-
                         DropdownMenu(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
@@ -166,12 +191,8 @@ fun MainScreen() {
                                         Text("Settings")
                                     }
                                 },
-                                onClick = {
-                                    menuExpanded = false
-                                    // TODO: navigate to settings
-                                }
+                                onClick = { menuExpanded = false }
                             )
-
                             DropdownMenuItem(
                                 text = {
                                     Row(
@@ -187,10 +208,7 @@ fun MainScreen() {
                                         Text("About")
                                     }
                                 },
-                                onClick = {
-                                    menuExpanded = false
-                                    // TODO: navigate to about
-                                }
+                                onClick = { menuExpanded = false }
                             )
                         }
                     }
@@ -210,12 +228,12 @@ fun MainScreen() {
                     enter = slideInVertically(initialOffsetY = { -it / 4 }) + fadeIn(tween(200)),
                     exit = slideOutVertically(targetOffsetY = { -it / 4 }) + fadeOut(tween(150)),
                 ) {
-                    val allModels = ModelsManager.getAllModels()
                     ModelSelectorDropdown(
-                        models = allModels,
+                        models = ModelsManager.getAllModels(),
                         selectedModel = selectedModel,
                         onModelSelected = {
                             selectedModel = it
+                            ModelsManager.setModel(it.name)
                             showSelector = false
                         },
                         modifier = Modifier.padding(top = 6.dp),
@@ -227,37 +245,27 @@ fun MainScreen() {
                         shortLabel = selectedModel.initials,
                         tintColor = selectedModel.tintColor
                     ),
-                    onModelClick = {
-                        showSelector = (!showSelector)
-                    },
+                    onModelClick = { showSelector = !showSelector },
                     onSend = { txt ->
-                        coroutineScope.launch {
-                            chatList.addMessage(Message(txt, true))
-                            val reply = ApiManager.sendMessage(chatList)
-                            chatList.addMessage(Message(reply, false))
-                            response = chatList.toList().joinToString("\n") { it.text }
+                        if (!uiState.isTyping) {
+                            chatViewModel.sendMessage(txt)
                         }
                     },
                     onVoice = {},
                     isError = !isNetworkAvailable,
-                    errorMessage = if (!isNetworkAvailable) "Network not available" else "Something went wrong. Please try again."
+                    errorMessage = if (!isNetworkAvailable)
+                        "Network not available"
+                    else
+                        "Something went wrong. Please try again."
                 )
             }
-        },
-        content = { innerPadding ->
-            LazyColumn(
-                contentPadding = innerPadding,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.End
-            ) {
-                item {
-                    Text(
-                        text = response
-                    )
-                }
-            }
         }
-    )
+    ) { innerPadding ->
+        ChatMessageList(
+            messages = uiState.messages,
+            isTyping = uiState.isTyping,
+            contentPadding = innerPadding,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }

@@ -5,11 +5,8 @@ plugins {
 
 android {
     namespace = "net.ekmai.android.in"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
+    ndkVersion = "30.0.14904198"
 
     defaultConfig {
         applicationId = "net.ekmai.android.in"
@@ -18,13 +15,19 @@ android {
         versionCode = 1
         versionName = "0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-//        val properties = Properties()
-//        properties.load(project.rootProject.file("local.properties").inputStream())
-//        buildConfigField(
-//            "String",
-//            "GEMINI_API_KEY",
-//            "\"${properties.getProperty("GEMINI_API_KEY")}\""
-//        )
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "4.1.2"
+        }
     }
 
     buildTypes {
@@ -36,17 +39,18 @@ android {
             )
         }
         debug {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
-        buildFeatures.buildConfig = true
     }
 }
 
@@ -65,6 +69,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

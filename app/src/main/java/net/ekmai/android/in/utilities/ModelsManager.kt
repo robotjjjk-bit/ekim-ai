@@ -38,7 +38,7 @@ private class NativeManager {
     private companion object {
         init {
             try {
-                System.loadLibrary("native")
+                System.loadLibrary("native-lib")
             } catch (_: Throwable) {
                 // Ignore for previews or other environments without the native library
             }
@@ -68,6 +68,17 @@ object ModelsManager {
             id = "meta-llama/llama-4-scout-17b-16e-instruct",
             initials = "ML",
             name = "Llama 4 17b",
+            apiKey = nativeManager.getGroq(),
+            baseUrl = GROQ_URL,
+            tintColor = Color(0xFFD97706),
+            contextWindow = "500K",
+            provider = "Meta",
+            type = GROQ
+        ),
+        ModelInfo(
+            id = "llama-3.1-8b-instant",
+            initials = "ML",
+            name = "Llama 3.1 8b Instant",
             apiKey = nativeManager.getGroq(),
             baseUrl = GROQ_URL,
             tintColor = Color(0xFFD97706),
@@ -109,9 +120,9 @@ object ModelsManager {
             type = GOOGLE
         ),
         ModelInfo(
-            id = "gemma-3n-e4b-it",
+            id = "gemma-4-31b-it",
             initials = "GG",
-            name = "Gemma 3n e4b it",
+            name = "Gemma 4 31b it",
             apiKey = nativeManager.getGemini(),
             baseUrl = GOOGLE_URL,
             tintColor = Color(0xFF16A34A),
@@ -132,7 +143,7 @@ object ModelsManager {
         )
     )
 
-    private val _currentModel = MutableStateFlow(models[1])
+    private val _currentModel = MutableStateFlow(models[2])
 
     fun getCurrentModel(): ModelInfo = _currentModel.value
 
