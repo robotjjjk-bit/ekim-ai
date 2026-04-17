@@ -5,7 +5,8 @@ import org.json.JSONObject
 
 data class Message(
     val text: String,
-    val isUser: Boolean
+    val isUser: Boolean,
+    val thinking: String? = null
 )
 
 class Node(

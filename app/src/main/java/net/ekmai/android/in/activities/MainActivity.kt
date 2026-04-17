@@ -45,6 +45,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import net.ekmai.android.`in`.components.AiModel
 import net.ekmai.android.`in`.components.ChatMessageList
 import net.ekmai.android.`in`.components.MessageField
@@ -90,7 +92,7 @@ fun MainScreen(
 ) {
     val context: Context = LocalContext.current
     val uiState by chatViewModel.uiState.collectAsState()
-
+    val scope = rememberCoroutineScope()
     var selectedModel by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
     var showSelector by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -106,6 +108,11 @@ fun MainScreen(
             snackbarHostState.showSnackbar(it)
             chatViewModel.clearError()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        ModelsManager.loadSavedModel(context)
+        selectedModel = ModelsManager.getCurrentModel()
     }
 
     Scaffold(
@@ -233,8 +240,10 @@ fun MainScreen(
                         selectedModel = selectedModel,
                         onModelSelected = {
                             selectedModel = it
-                            ModelsManager.setModel(it.name)
                             showSelector = false
+                            scope.launch {
+                                ModelsManager.setModel(context, it.name)
+                            }
                         },
                         modifier = Modifier.padding(top = 6.dp),
                     )

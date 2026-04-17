@@ -1,6 +1,9 @@
 package net.ekmai.android.`in`.components
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -15,6 +18,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,21 +30,34 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.ekmai.android.`in`.utilities.Message
+import net.ekmai.android.`in`.utilities.ModelsManager
 
 @Composable
 fun ChatMessageList(
@@ -104,11 +121,20 @@ fun ChatMessageList(
 fun ChatBubble(message: Message) {
     val configuration = LocalConfiguration.current
     val maxBubbleWidth = (configuration.screenWidthDp * 0.78).dp
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var copied by remember { mutableStateOf(false) }
 
-    Row(
+    // Get current model name only for AI messages
+    val modelName = if (!message.isUser) {
+        remember { ModelsManager.getCurrentModel().name }
+    } else null
+
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
+        horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start
     ) {
+        // Bubble
         Box(
             modifier = Modifier
                 .widthIn(max = maxBubbleWidth)
@@ -141,7 +167,59 @@ fun ChatBubble(message: Message) {
                 )
             )
         }
+
+        // Below-bubble row: model name + copy button (AI only)
+        if (!message.isUser) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+            ) {
+                // Model name label
+                if (modelName != null) {
+                    Text(
+                        text = modelName,
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                        ),
+                        modifier = Modifier.padding(end = 2.dp)
+                    )
+                }
+
+                // Copy button
+                IconButton(
+                    onClick = {
+                        copyToClipboard(context, message.text)
+                        scope.launch {
+                            copied = true
+                            delay(2000)
+                            copied = false
+                        }
+                    },
+                    modifier = Modifier.size(26.dp)
+                ) {
+                    Icon(
+                        imageVector = if (copied) Icons.Filled.Check else Icons.Outlined.ContentCopy,
+                        contentDescription = if (copied) "Copied" else "Copy",
+                        modifier = Modifier.size(14.dp),
+                        tint = if (copied)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    )
+                }
+            }
+        }
     }
+}
+
+// Copy helper function
+private fun copyToClipboard(context: Context, text: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = ClipData.newPlainText("message", text)
+    clipboard.setPrimaryClip(clip)
 }
 
 @Composable

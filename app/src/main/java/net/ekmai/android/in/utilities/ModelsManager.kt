@@ -1,7 +1,10 @@
 package net.ekmai.android.`in`.utilities
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 
 data class ModelInfo(
     val id: String,
@@ -40,7 +43,7 @@ private class NativeManager {
             try {
                 System.loadLibrary("native-lib")
             } catch (_: Throwable) {
-                // Ignore for previews or other environments without the native library
+
             }
         }
     }
@@ -61,6 +64,39 @@ object ModelsManager {
             baseUrl = GROQ_URL,
             tintColor = Color(0xFF7C6AF7),
             contextWindow = "200K",
+            provider = "OpenAI",
+            type = GROQ
+        ),
+        ModelInfo(
+            id = "openai/gpt-oss-20b",
+            initials = "GO",
+            name = "GPT Oss 20B",
+            apiKey = nativeManager.getGroq(),
+            baseUrl = GROQ_URL,
+            tintColor = Color(0xFF7C6AF7),
+            contextWindow = "200K",
+            provider = "OpenAI",
+            type = GROQ
+        ),
+        ModelInfo(
+            id = "whisper-large-v3",
+            initials = "WI",
+            name = "Whisper Large v3",
+            apiKey = nativeManager.getGroq(),
+            baseUrl = GROQ_URL,
+            tintColor = Color(0xFF7C6AF7),
+            contextWindow = "-",
+            provider = "OpenAI",
+            type = GROQ
+        ),
+        ModelInfo(
+            id = "whisper-large-v3-turbo",
+            initials = "WI",
+            name = "Whisper Large v3-turbo",
+            apiKey = nativeManager.getGroq(),
+            baseUrl = GROQ_URL,
+            tintColor = Color(0xFF7C6AF7),
+            contextWindow = "-",
             provider = "OpenAI",
             type = GROQ
         ),
@@ -140,6 +176,17 @@ object ModelsManager {
             contextWindow = "NULL",
             provider = "Google",
             type = GOOGLE
+        ),
+        ModelInfo(
+            id = "allam-2-7b",
+            initials = "AL",
+            name = "Allam 2-7b",
+            apiKey = nativeManager.getGroq(),
+            baseUrl = GROQ_URL,
+            tintColor = Color(0xFF00E3FF),
+            contextWindow = "500K",
+            provider = "NCAI",
+            type = GROQ
         )
     )
 
@@ -149,10 +196,22 @@ object ModelsManager {
 
     fun getAllModels(): List<ModelInfo> = models
 
-    fun setModel(modelName: String) {
+    suspend fun loadSavedModel(context: Context) {
+        val prefs = context.dataStore.data.first()
+        val savedName = prefs[ModelPref.MODEL_NAME]
+        val model = models.find { it.name == savedName }
+        if (model != null) {
+            _currentModel.value = model
+        }
+    }
+
+    suspend fun setModel(context: Context, modelName: String) {
         val model = models.find { it.name == modelName }
         model?.let {
             _currentModel.value = it
+            context.dataStore.edit { preference ->
+                preference[ModelPref.MODEL_NAME] = modelName
+            }
         }
     }
 }

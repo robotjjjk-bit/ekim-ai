@@ -36,18 +36,19 @@ class ChatViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            val reply = ApiManager.sendMessage(chatList)
+            val response = ApiManager.sendMessage(chatList)
+            val replyText = response.text
 
-            val isError = reply.startsWith("Error") || reply.startsWith("API Error")
+            val isError = replyText.startsWith("Error") || replyText.startsWith("API Error")
 
-            val aiMessage = Message(reply, isUser = false)
+            val aiMessage = Message(replyText, isUser = false)
             if (!isError) chatList.addMessage(aiMessage)
 
             _uiState.update { state ->
                 state.copy(
                     messages = state.messages + aiMessage,
                     isTyping = false,
-                    error = if (isError) reply else null
+                    error = if (isError) replyText else null
                 )
             }
         }
