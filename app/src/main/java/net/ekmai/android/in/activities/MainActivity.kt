@@ -1,10 +1,13 @@
 package net.ekmai.android.`in`.activities
 
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -60,24 +63,46 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import net.ekmai.android.`in`.components.AiModel
 import net.ekmai.android.`in`.components.ChatMessageList
 import net.ekmai.android.`in`.components.MessageField
 import net.ekmai.android.`in`.components.ModelSelectorDropdown
 import net.ekmai.android.`in`.ui.theme.EkmAITheme
+import net.ekmai.android.`in`.ui.theme.ThemeManager
+import net.ekmai.android.`in`.utilities.ApiManager
 import net.ekmai.android.`in`.utilities.ModelsManager
 import net.ekmai.android.`in`.utilities.NetworkObserver
 import net.ekmai.android.`in`.utilities.ChatViewModel
+import net.ekmai.android.`in`.utilities.ModelInfo
+import net.ekmai.android.`in`.utilities.PromptPreference
+import net.ekmai.android.`in`.ui.theme.ThemeViewModel
+import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
+    private val viewModel by viewModels<ThemeViewModel> {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ThemeViewModel(this@MainActivity) as T
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val preference: PromptPreference = PromptPreference(applicationContext)
+        val data = preference.getData("prompt")
+        ApiManager.systemPrompt = data ?: ApiManager.systemPrompt
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        ThemeManager.themeState.value = net.ekmai.android.`in`.ui.theme.getTheme(this)
         setContent {
-            EkmAITheme {
+            val theme by ThemeManager.themeState.collectAsState()
+            EkmAITheme(
+                themeOption = theme
+            ) {
                 MainScreen()
             }
         }
@@ -90,6 +115,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     chatViewModel: ChatViewModel = viewModel()
 ) {
+    val activity = LocalActivity.current as Activity
     val context: Context = LocalContext.current
     val uiState by chatViewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -198,7 +224,10 @@ fun MainScreen(
                                         Text("Settings")
                                     }
                                 },
-                                onClick = { menuExpanded = false }
+                                onClick = {
+                                    menuExpanded = false
+                                    activity.launchSettings()
+                                }
                             )
                             DropdownMenuItem(
                                 text = {
@@ -215,7 +244,10 @@ fun MainScreen(
                                         Text("About")
                                     }
                                 },
-                                onClick = { menuExpanded = false }
+                                onClick = {
+                                    menuExpanded = false
+                                    activity.launchAbout()
+                                }
                             )
                         }
                     }
@@ -249,11 +281,7 @@ fun MainScreen(
                     )
                 }
                 MessageField(
-                    selectedModel = AiModel(
-                        name = selectedModel.name,
-                        shortLabel = selectedModel.initials,
-                        tintColor = selectedModel.tintColor
-                    ),
+                    selectedModel = ModelInfo(selectedModel.id, selectedModel.provider, selectedModel.contextWindow, selectedModel.initials, selectedModel.tintColor, selectedModel.name, selectedModel.apiKey, selectedModel.baseUrl, selectedModel.type),
                     onModelClick = { showSelector = !showSelector },
                     onSend = { txt ->
                         if (!uiState.isTyping) {

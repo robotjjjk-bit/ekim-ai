@@ -54,8 +54,9 @@ object ModelsManager {
     private const val GROQ_URL = "https://api.groq.com/openai/v1/"
     private const val GROQ = "openai"
     private const val GOOGLE = "google"
-    private val nativeManager: NativeManager = NativeManager()
-    private val models = listOf(
+    private val nativeManager: NativeManager by lazy { NativeManager() }
+    private val models by lazy {
+        listOf(
         ModelInfo(
             id = "openai/gpt-oss-120b",
             initials = "GO",
@@ -188,9 +189,9 @@ object ModelsManager {
             provider = "NCAI",
             type = GROQ
         )
-    )
+    ) }
 
-    private val _currentModel = MutableStateFlow(models[2])
+    private val _currentModel by lazy { MutableStateFlow(models[9]) }
 
     fun getCurrentModel(): ModelInfo = _currentModel.value
 

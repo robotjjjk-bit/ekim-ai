@@ -29,23 +29,13 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class AiModel(
-    val name: String,
-    val shortLabel: String,
-    val tintColor: Color
-)
-
-val defaultModels = listOf(
-    AiModel("Gemini Flash 2.0", "Flash",  Color(0xFF7C6AF7)),
-    AiModel("Claude Opus 4",   "Opus",   Color(0xFF0D9488)),
-    AiModel("Claude Haiku",    "Haiku",  Color(0xFFF34B4B)),
-)
+import net.ekmai.android.`in`.utilities.ModelInfo
+import net.ekmai.android.`in`.utilities.ModelsManager
 
 @Composable
 fun MessageField(
     modifier: Modifier = Modifier,
-    selectedModel: AiModel = defaultModels[0],
+    selectedModel: ModelInfo = ModelsManager.getCurrentModel(),
     onModelClick: () -> Unit = {},
     onSend: (String) -> Unit = {},
     onVoice: () -> Unit = {},
@@ -275,7 +265,7 @@ private fun AnimatedIconButton(
 
 @Composable
 private fun ModelIndicatorBar(
-    model: AiModel,
+    model: ModelInfo,
     onClick: () -> Unit
 ) {
     val interactionSource = remember {
@@ -339,7 +329,7 @@ fun CustomMessageFieldPreview() {
             contentAlignment = Alignment.BottomCenter
         ) {
             MessageField(
-                selectedModel = defaultModels[0],
+                selectedModel = ModelsManager.getCurrentModel(),
                 onModelClick = {},
                 onSend = {},
                 onVoice = {}
@@ -359,7 +349,7 @@ fun CustomMessageFieldErrorPreview() {
             contentAlignment = Alignment.BottomCenter
         ) {
             MessageField(
-                selectedModel = defaultModels[2],
+                selectedModel = ModelsManager.getCurrentModel(),
                 isError = true,
                 errorMessage = "Network error. Please check your connection.",
                 onSend = {},

@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1"
+        versionName = "v0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
@@ -55,6 +55,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.process.phoenix)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
@@ -70,6 +71,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.appcompat)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -6,6 +6,7 @@ import org.json.JSONObject
 data class Message(
     val text: String,
     val isUser: Boolean,
+    val model: String,
     val thinking: String? = null
 )
 

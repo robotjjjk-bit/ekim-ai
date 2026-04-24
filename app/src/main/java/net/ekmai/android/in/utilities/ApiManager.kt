@@ -35,19 +35,23 @@ object ApiManager {
         * Goal: [what you aimed to achieve with your response]
     """.trimIndent()
 
+    var systemPrompt: String = ""
+
     private fun buildSystemPrompt(): String {
         return if (showReasoning) {
-            "$baseSystemPrompt\n\n$reasoningSystemPrompt"
+            "$baseSystemPrompt\n\n$reasoningSystemPrompt\n\n${systemPrompt.trimIndent()}"
         } else {
-            baseSystemPrompt
+            "$baseSystemPrompt\n\n${systemPrompt.trimIndent()}"
         }
     }
 
-    private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
 
     suspend fun sendMessage(chatList: LinkedList): ApiResponse = withContext(Dispatchers.IO) {
         val model = ModelsManager.getCurrentModel()

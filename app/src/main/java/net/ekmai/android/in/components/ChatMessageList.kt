@@ -57,7 +57,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.ekmai.android.`in`.utilities.Message
-import net.ekmai.android.`in`.utilities.ModelsManager
 
 @Composable
 fun ChatMessageList(
@@ -120,21 +119,18 @@ fun ChatMessageList(
 @Composable
 fun ChatBubble(message: Message) {
     val configuration = LocalConfiguration.current
-    val maxBubbleWidth = (configuration.screenWidthDp * 0.78).dp
+    val maxBubbleWidth = (configuration.screenWidthDp * 0.85f).dp
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var copied by remember { mutableStateOf(false) }
-
-    // Get current model name only for AI messages
-    val modelName = if (!message.isUser) {
-        remember { ModelsManager.getCurrentModel().name }
-    } else null
+    val modelName = message.model
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
         horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start
     ) {
-        // Bubble
         Box(
             modifier = Modifier
                 .widthIn(max = maxBubbleWidth)
@@ -154,41 +150,28 @@ fun ChatBubble(message: Message) {
                 )
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
-            Text(
+            MarkdownText(
                 text = message.text,
-                style = TextStyle(
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Normal,
-                    lineHeight = 22.sp,
-                    color = if (message.isUser)
-                        MaterialTheme.colorScheme.onPrimary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                isUserMessage = message.isUser
             )
         }
 
-        // Below-bubble row: model name + copy button (AI only)
         if (!message.isUser) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp)
             ) {
-                // Model name label
-                if (modelName != null) {
-                    Text(
-                        text = modelName,
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                        ),
-                        modifier = Modifier.padding(end = 2.dp)
-                    )
-                }
+                Text(
+                    text = modelName,
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    ),
+                    modifier = Modifier.padding(end = 2.dp)
+                )
 
-                // Copy button
                 IconButton(
                     onClick = {
                         copyToClipboard(context, message.text)
@@ -215,7 +198,6 @@ fun ChatBubble(message: Message) {
     }
 }
 
-// Copy helper function
 private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clip = ClipData.newPlainText("message", text)
