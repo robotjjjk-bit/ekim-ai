@@ -57,11 +57,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import net.ekmai.android.`in`.R
@@ -131,6 +133,7 @@ fun AboutScreen(onBack: () -> Unit = {}) {
         targetValue = if (isPressed) 0.18f else 0.10f,
         label = "barAlpha"
     )
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -292,7 +295,13 @@ fun AboutScreen(onBack: () -> Unit = {}) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = ModelsManager.getCurrentModel().tintColor.copy(bgAlpha),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                        onClick = {
+                            val intent = Intent()
+                            intent.action = Intent.ACTION_VIEW
+                            intent.data = "https://github.com/ekam-labs".toUri()
+                            context.startActivity(intent)
+                        }
                     ) {
                         Row(
                             modifier = Modifier

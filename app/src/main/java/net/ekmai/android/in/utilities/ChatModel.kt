@@ -19,7 +19,7 @@ class ChatViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private val chatList = LinkedList()
+    private var chatList = LinkedList()
 
     fun sendMessage(text: String) {
         if (text.isBlank()) return
@@ -51,6 +51,19 @@ class ChatViewModel : ViewModel() {
                     error = if (isError) replyText else null
                 )
             }
+        }
+    }
+
+    fun refresh(newList: LinkedList, messages: List<Message>?) {
+        chatList.clear()
+        chatList = newList
+
+        _uiState.update {
+            it.copy(
+                messages = messages!!,
+                isTyping = false,
+                error = null
+            )
         }
     }
 

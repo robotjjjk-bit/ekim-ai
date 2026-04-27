@@ -5,9 +5,10 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -27,9 +28,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,41 +62,36 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import net.ekmai.android.`in`.components.ChatMessageList
 import net.ekmai.android.`in`.components.MessageField
 import net.ekmai.android.`in`.components.ModelSelectorDropdown
+import net.ekmai.android.`in`.components.VoiceBottomSheet
 import net.ekmai.android.`in`.ui.theme.EkmAITheme
 import net.ekmai.android.`in`.ui.theme.ThemeManager
 import net.ekmai.android.`in`.utilities.ApiManager
 import net.ekmai.android.`in`.utilities.ModelsManager
 import net.ekmai.android.`in`.utilities.NetworkObserver
 import net.ekmai.android.`in`.utilities.ChatViewModel
+import net.ekmai.android.`in`.utilities.ImportExport
+import net.ekmai.android.`in`.utilities.LinkedList
 import net.ekmai.android.`in`.utilities.ModelInfo
 import net.ekmai.android.`in`.utilities.PromptPreference
-import net.ekmai.android.`in`.ui.theme.ThemeViewModel
-import kotlin.getValue
+import net.ekmai.android.`in`.utilities.VoiceManager
+import net.ekmai.android.`in`.utilities.VoiceState
+import net.ekmai.android.`in`.utilities.rememberMicPermission
 
 class MainActivity : ComponentActivity() {
-    private val viewModel by viewModels<ThemeViewModel> {
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ThemeViewModel(this@MainActivity) as T
-            }
-        }
-    }
-
+    private lateinit var voiceManager: VoiceManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        voiceManager = VoiceManager(this)
         enableEdgeToEdge()
-        val preference: PromptPreference = PromptPreference(applicationContext)
+        val preference = PromptPreference(applicationContext)
         val data = preference.getData("prompt")
         ApiManager.systemPrompt = data ?: ApiManager.systemPrompt
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -103,22 +101,65 @@ class MainActivity : ComponentActivity() {
             EkmAITheme(
                 themeOption = theme
             ) {
-                MainScreen()
+                MainScreen(voiceManager = voiceManager)
             }
         }
     }
 }
 
-@Preview(showSystemUi = true)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    chatViewModel: ChatViewModel = viewModel()
+    chatViewModel: ChatViewModel = viewModel(),
+    voiceManager: VoiceManager
 ) {
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val uiState by chatViewModel.uiState.collectAsState()
+    val voiceState by voiceManager.state.collectAsState()
+    val rmsLevel by voiceManager.rmsLevel.collectAsState()
+    var showVoiceSheet by remember { mutableStateOf(false) }
+    val currentModel by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
+    val accentColor by remember { mutableStateOf(currentModel.tintColor) }
+    val requestMic = rememberMicPermission(
+        onGranted = {
+            showVoiceSheet = true
+            voiceManager.startListening()
+        },
+        onDenied = {
+            scope.launch { snackbarHostState.showSnackbar("Microphone permission required") }
+        }
+    )
+    LaunchedEffect(voiceState) {
+        if (voiceState is VoiceState.Error) {
+            // keep sheet open so user sees error + retry
+        }
+    }
+
+    if (showVoiceSheet) {
+        VoiceBottomSheet(
+            state = voiceState,
+            rmsLevel = rmsLevel,
+            accentColor = accentColor,
+            onDismiss = {
+                voiceManager.reset()
+                showVoiceSheet = false
+            },
+            onStop = { voiceManager.stopListening() },
+            onSend = { text ->
+                voiceManager.reset()
+                showVoiceSheet = false
+                if (!uiState.isTyping) chatViewModel.sendMessage(text)
+            },
+            onRetry = {
+                voiceManager.reset()
+                voiceManager.startListening()
+            }
+        )
+    }
+
     val activity = LocalActivity.current as Activity
     val context: Context = LocalContext.current
-    val uiState by chatViewModel.uiState.collectAsState()
-    val scope = rememberCoroutineScope()
     var selectedModel by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
     var showSelector by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -127,7 +168,30 @@ fun MainScreen(
     val isNetworkAvailable by networkObserver.observe()
         .collectAsState(initial = networkObserver.isConnected())
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val isSaving by getSaving(context).collectAsState(initial = false)
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            val messages = ImportExport.import(context, it)
+            val newList = LinkedList()
+            messages?.forEach { message ->
+                newList.addMessage(message)
+            }
+            chatViewModel.refresh(newList = newList, messages)
+
+            if (messages != null) {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Imported ${messages.size} messages")
+                }
+            } else {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Import failed")
+                }
+            }
+        }
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -229,6 +293,46 @@ fun MainScreen(
                                     activity.launchSettings()
                                 }
                             )
+                            if (isSaving) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Upload,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text("Export")
+                                        }
+                                    },
+                                    onClick = {
+                                        ImportExport.export(context, chatList = uiState.messages)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Download,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text("Import")
+                                        }
+                                    },
+                                    onClick = {
+                                        importLauncher.launch(arrayOf("application/json"))
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = {
                                     Row(
@@ -288,7 +392,10 @@ fun MainScreen(
                             chatViewModel.sendMessage(txt)
                         }
                     },
-                    onVoice = {},
+                    onVoice = {
+                        if (voiceManager.isAvailable()) requestMic()
+                        else scope.launch { snackbarHostState.showSnackbar("Voice not available on this device") }
+                    },
                     isError = !isNetworkAvailable,
                     errorMessage = if (!isNetworkAvailable)
                         "Network not available"

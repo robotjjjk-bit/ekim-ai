@@ -4,6 +4,8 @@ import net.ekmai.android.`in`.R
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -49,8 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.core.net.toUri
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.ekmai.android.`in`.components.ModelSelectorDropdown
 import net.ekmai.android.`in`.utilities.ApiManager
@@ -59,6 +67,7 @@ import net.ekmai.android.`in`.ui.theme.EkmAITheme
 import net.ekmai.android.`in`.ui.theme.ThemeManager
 import net.ekmai.android.`in`.ui.theme.ThemeOption
 import net.ekmai.android.`in`.ui.theme.ThemeViewModel
+import net.ekmai.android.`in`.utilities.ChatViewModel
 import kotlin.getValue
 import net.ekmai.android.`in`.utilities.VersionChecker
 
@@ -131,9 +140,23 @@ private val Green600  = Color(0xFF3B6D11)
 private data class IconColors(val bg: Color, val tint: Color)
 private enum class RowTrailing { CHEVRON, NONE }
 
+fun getSaving(context: Context): Flow<Boolean> {
+    return context.settingsDataStore.data.map { prefs ->
+        prefs[SettingsDatastore.IMPORT_EXPORT] ?: false
+    }
+}
+
+suspend fun saveSaving(context: Context, value: Boolean) {
+    context.settingsDataStore.edit { prefs ->
+        prefs[SettingsDatastore.IMPORT_EXPORT] = value
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit = {}) {
+fun SettingsScreen(
+    onBack: () -> Unit = {}
+) {
     val context = LocalContext.current
     val isPreview = LocalInspectionMode.current
     var showReasoning by remember {
@@ -141,8 +164,9 @@ fun SettingsScreen(onBack: () -> Unit = {}) {
     }
     var showSelector by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    var saveChatHistory by remember { mutableStateOf(true) }
     var currentModel by remember { mutableStateOf(ModelsManager.getCurrentModel()) }
+
+    val import_export by getSaving(context).collectAsState(initial = false)
 
     val versionChecker = VersionChecker()
     val currentV = context.packageManager.getPackageInfo(context.packageName, 0).versionName
@@ -283,20 +307,16 @@ fun SettingsScreen(onBack: () -> Unit = {}) {
             item {
                 SettingsCard {
                     ToggleRow(
-                        icon = Icons.Outlined.History,
-                        iconColors = IconColors(Pink50, Pink600),
-                        title = "Chat History",
-                        subtitle = "Save conversations locally",
-                        checked = saveChatHistory,
-                        onCheckedChange = { saveChatHistory = it }
-                    )
-                    RowDivider()
-                    SettingsRow(
                         icon = Icons.Outlined.FileDownload,
                         iconColors = IconColors(Coral50, Coral600),
-                        title = "Export Chats",
-                        subtitle = "Download as JSON or text",
-                        onClick = {}
+                        title = "Import Export",
+                        subtitle = "Allows user to save and reload chats using json",
+                        checked = import_export,
+                        onCheckedChange = {
+                            scope.launch {
+                                saveSaving(context, !import_export)
+                            }
+                        }
                     )
                 }
             }
@@ -695,4 +715,11 @@ fun SettingsScreenPreview() {
     ) {
         SettingsScreen()
     }
+}
+
+val Context.settingsDataStore by preferencesDataStore(name = "settings")
+
+object SettingsDatastore {
+    val SHOW_REASONING = booleanPreferencesKey("show_reasoning")
+    val IMPORT_EXPORT = booleanPreferencesKey("import_export")
 }

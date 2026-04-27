@@ -1,5 +1,6 @@
 package net.ekmai.android.`in`.utilities
 
+import kotlinx.serialization.descriptors.PrimitiveKind
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -16,7 +17,7 @@ class Node(
 )
 
 class LinkedList(
-    private val limit: Int = 50 // safe for memory
+    private val limit: Int = Int.MAX_VALUE
 ) {
     private var head: Node? = null
     private var tail: Node? = null
@@ -34,6 +35,12 @@ class LinkedList(
         }
         size++
         if (size > limit) deleteFirst()
+    }
+
+    fun addAll(messages: List<Message>) {
+        messages.forEach {
+            addMessage(it)
+        }
     }
 
     fun deleteFirst(): Message? {
@@ -102,6 +109,8 @@ class LinkedList(
         return list
     }
 
+    fun getLast(): Message? = tail?.data
+    fun getFirst(): Message? = head?.data
     fun getSize(): Int = size
     fun isEmpty(): Boolean = size == 0
     fun clear() {

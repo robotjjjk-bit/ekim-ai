@@ -50,10 +50,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import net.ekmai.android.`in`.R
@@ -104,7 +106,7 @@ private data class PolicySection(
 @Composable
 fun PrivacyPolicyScreen(onBack: () -> Unit = {}) {
     val accent = ModelsManager.getCurrentModel().tintColor
-
+    val context = LocalContext.current
     val sections = listOf(
         PolicySection(
             Icons.Outlined.FreeBreakfast, "Ease of services", Color(0xFFAD123F),
@@ -220,7 +222,13 @@ fun PrivacyPolicyScreen(onBack: () -> Unit = {}) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                    onClick = {
+                        val intent = Intent()
+                        intent.action = Intent.ACTION_VIEW
+                        intent.data = "https://t.me/+96O78uK9gIkxMThl".toUri()
+                        context.startActivity(intent)
+                    }
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
