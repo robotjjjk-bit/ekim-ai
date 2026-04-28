@@ -405,11 +405,26 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        ChatMessageList(
-            messages = uiState.messages,
-            isTyping = uiState.isTyping,
-            contentPadding = innerPadding,
-            modifier = Modifier.fillMaxSize()
-        )
+        if(uiState.messages.isNotEmpty()) {
+            ChatMessageList(
+                messages = uiState.messages,
+                isTyping = uiState.isTyping,
+                contentPadding = innerPadding,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "How can I help you today?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

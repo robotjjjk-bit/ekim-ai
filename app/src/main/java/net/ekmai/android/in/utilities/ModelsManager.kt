@@ -80,28 +80,6 @@ object ModelsManager {
             type = GROQ
         ),
         ModelInfo(
-            id = "whisper-large-v3",
-            initials = "WI",
-            name = "Whisper Large v3",
-            apiKey = nativeManager.getGroq(),
-            baseUrl = GROQ_URL,
-            tintColor = Color(0xFF7C6AF7),
-            contextWindow = "-",
-            provider = "OpenAI",
-            type = GROQ
-        ),
-        ModelInfo(
-            id = "whisper-large-v3-turbo",
-            initials = "WI",
-            name = "Whisper Large v3-turbo",
-            apiKey = nativeManager.getGroq(),
-            baseUrl = GROQ_URL,
-            tintColor = Color(0xFF7C6AF7),
-            contextWindow = "-",
-            provider = "OpenAI",
-            type = GROQ
-        ),
-        ModelInfo(
             id = "meta-llama/llama-4-scout-17b-16e-instruct",
             initials = "ML",
             name = "Llama 4 17b",
