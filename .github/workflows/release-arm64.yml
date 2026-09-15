@@ -23,7 +23,24 @@ jobs:
       - name: Build release (arm64-only)
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease --stacktrace
+          set -o pipefail
+          ./gradlew :app:assembleRelease --stacktrace --console=plain 2>&1 | tee gradle.log
+
+      - name: Surface failure publicly
+        if: failure()
+        run: |
+          echo '### gradle.log (tail)' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -80 gradle.log >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -a -m5 -E "^e: |error:|FAILED|Could not|Caused by|What went wrong" gradle.log | sed 's/%/%25/g' | while IFS= read -r line; do echo "::error::$line"; done || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gradle-log
+          path: gradle.log
+          if-no-files-found: warn
 
       - name: Zip single APK
         run: |
