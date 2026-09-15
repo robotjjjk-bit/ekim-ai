@@ -21,6 +21,11 @@ android {
                 cppFlags += "-std=c++17"
             }
         }
+
+        // Release publikasi: arm64 saja (1 APK dalam 1 ZIP)
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     externalNativeBuild {
@@ -33,6 +38,8 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            // Sideloadable tanpa keystore pribadi; ganti dengan signingConfig release asli bila rilis Play Store.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -50,11 +50,14 @@ fun ModelSelectorDropdown(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = LiquidGlass.surfaceColor(),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
         tonalElevation = 3.dp,
+        shadowElevation = 12.dp,
     ) {
         Column {
+            // Liquid Glass: highlight atas grup model (setara GlassEffectContainer spacing konsisten).
+            GlassTopHighlight(cornerRadius = 16.dp, alpha = 0.25f)
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },

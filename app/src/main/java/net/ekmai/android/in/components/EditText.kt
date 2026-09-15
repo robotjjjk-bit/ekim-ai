@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -61,7 +62,8 @@ fun MessageField(
         Surface(
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 2.dp,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shadowElevation = 8.dp,
+            color = LiquidGlass.surfaceColor(),
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
@@ -71,6 +73,8 @@ fun MessageField(
                 )
         ) {
             Column {
+                // Liquid Glass: refleksi tepi atas, murni visual, tanpa ubah logika input.
+                GlassTopHighlight(cornerRadius = 24.dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -248,8 +252,10 @@ private fun AnimatedIconButton(
         modifier = Modifier
             .size(40.dp)
             .scale(scale)
+            .shadow(6.dp, CircleShape, clip = false)
             .clip(CircleShape)
             .background(containerColor)
+            .glassCircleBorder()
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

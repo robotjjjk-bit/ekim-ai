@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.content.edit
 import androidx.core.view.WindowCompat
+import net.ekmai.android.`in`.components.applyLiquidGlassWindowBlur
 
 enum class ThemeOption {
     DARK,
@@ -87,6 +88,8 @@ fun EkmAITheme(
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // Liquid Glass: window blur API 31+, no-op + fallback translusen di API lama.
+            applyLiquidGlassWindowBlur(view.context as Activity)
         }
     }
 

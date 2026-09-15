@@ -25,6 +25,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -60,6 +61,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import net.ekmai.android.`in`.components.GlassTopHighlight
 import net.ekmai.android.`in`.components.ModelSelectorDropdown
 import net.ekmai.android.`in`.utilities.ApiManager
 import net.ekmai.android.`in`.utilities.ModelsManager
@@ -428,8 +430,13 @@ private fun ProfileHero() {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = ModelsManager.getCurrentModel().tintColor.copy(bgAlpha),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
+        tonalElevation = 2.dp,
+        shadowElevation = 6.dp
     ) {
+        Column {
+            // Liquid Glass: lapisan refleksi atas. Struktur Row di bawah tidak diubah.
+            GlassTopHighlight(cornerRadius = 16.dp, alpha = 0.25f)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -494,6 +501,7 @@ private fun ProfileHero() {
                 Text(text = "About", fontSize = 13.sp, fontWeight = FontWeight.Medium)
             }
         }
+        }
     }
 }
 
@@ -522,9 +530,15 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = ModelsManager.getCurrentModel().tintColor.copy(bgAlpha),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
+        tonalElevation = 2.dp,
+        shadowElevation = 6.dp
     ) {
-        Column(modifier = Modifier.fillMaxWidth(), content = content)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Liquid Glass: lapisan kaca di atas isi card. Content asli dirender di bawah tanpa diubah.
+            GlassTopHighlight(cornerRadius = 16.dp, alpha = 0.22f)
+            Column(modifier = Modifier.fillMaxWidth(), content = content)
+        }
     }
 }
 
@@ -686,6 +700,11 @@ private fun EkmSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
             .size(width = 44.dp, height = 24.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(trackColor)
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(12.dp)
+            )
             .clickable { onCheckedChange(!checked) }
             .padding(3.dp),
         contentAlignment = Alignment.CenterStart

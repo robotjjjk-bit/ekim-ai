@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep JNI bridge for release (R8 strips it -> UnsatisfiedLinkError hanya di release).
+-keep class net.ekmai.android.in.utilities.NativeManager { *; }
