@@ -33,7 +33,7 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           tail -80 gradle.log >> "$GITHUB_STEP_SUMMARY" || true
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          grep -a -m5 -E "^e: |error:|FAILED|Could not|Caused by|What went wrong" gradle.log | sed 's/%/%25/g' | while IFS= read -r line; do echo "::error::$line"; done || true
+          grep -a -m15 -E "^e: |error:|FAILED|Could not|Caused by|What went wrong" gradle.log | sed 's/%/%25/g' | while IFS= read -r line; do echo "::error::$line"; done || true
 
       - uses: actions/upload-artifact@v4
         if: always()

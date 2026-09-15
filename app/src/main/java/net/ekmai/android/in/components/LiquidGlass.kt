@@ -145,8 +145,9 @@ fun applyLiquidGlassWindowBlur(activity: Activity) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         try {
             // Blur untuk konten di belakang window (dialogs, bottom sheets).
+            // Catatan: Window TIDAK punya setBlurBehindRadius (itu tidak eksis di SDK),
+            // hanya setBackgroundBlurRadius yang valid di API 31+.
             activity.window.setBackgroundBlurRadius(48)
-            activity.window.setBlurBehindRadius(32)
         } catch (_: Throwable) {
             // Fallback diam: tetap tampil sebagai kaca translusen biasa.
         }
