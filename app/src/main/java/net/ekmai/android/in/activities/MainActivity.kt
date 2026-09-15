@@ -179,7 +179,7 @@ fun MainScreen(
             messages?.forEach { message ->
                 newList.addMessage(message)
             }
-            chatViewModel.refresh(newList = newList, messages)
+            chatViewModel.refresh(newList = newList, messages = messages)
 
             if (messages != null) {
                 scope.launch {

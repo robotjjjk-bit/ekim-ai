@@ -24,7 +24,7 @@ class ChatViewModel : ViewModel() {
     fun sendMessage(text: String) {
         if (text.isBlank()) return
 
-        val userMessage = Message(text.trim(), isUser = true, ModelsManager.getCurrentModel().name)
+        val userMessage = Message(text = text.trim(), isUser = true, model = ModelsManager.getCurrentModel().name)
         chatList.addMessage(userMessage)
 
         _uiState.update { state ->
@@ -41,7 +41,7 @@ class ChatViewModel : ViewModel() {
 
             val isError = replyText.startsWith("Error") || replyText.startsWith("API Error")
 
-            val aiMessage = Message(replyText, isUser = false, ModelsManager.getCurrentModel().name)
+            val aiMessage = Message(text = replyText, isUser = false, model = ModelsManager.getCurrentModel().name)
             if (!isError) chatList.addMessage(aiMessage)
 
             _uiState.update { state ->

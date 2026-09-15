@@ -214,10 +214,10 @@ fun TypingIndicator() {
         animationSpec = infiniteRepeatable(
             animation = keyframes {
                 durationMillis = 900
-                0.25f at 0 using LinearEasing
-                1f at 200 using LinearEasing
-                0.25f at 500 using LinearEasing
-                0.25f at 900 using LinearEasing
+                0.25f at 0 with LinearEasing
+                1f at 200 with LinearEasing
+                0.25f at 500 with LinearEasing
+                0.25f at 900 with LinearEasing
             },
             repeatMode = RepeatMode.Restart
         ),
@@ -230,10 +230,10 @@ fun TypingIndicator() {
         animationSpec = infiniteRepeatable(
             animation = keyframes {
                 durationMillis = 900
-                0.25f at 150 using LinearEasing
-                1f at 350 using LinearEasing
-                0.25f at 650 using LinearEasing
-                0.25f at 900 using LinearEasing
+                0.25f at 150 with LinearEasing
+                1f at 350 with LinearEasing
+                0.25f at 650 with LinearEasing
+                0.25f at 900 with LinearEasing
             },
             repeatMode = RepeatMode.Restart
         ),
@@ -246,10 +246,10 @@ fun TypingIndicator() {
         animationSpec = infiniteRepeatable(
             animation = keyframes {
                 durationMillis = 900
-                0.25f at 300 using LinearEasing
-                1f at 500 using LinearEasing
-                0.25f at 800 using LinearEasing
-                0.25f at 900 using LinearEasing
+                0.25f at 300 with LinearEasing
+                1f at 500 with LinearEasing
+                0.25f at 800 with LinearEasing
+                0.25f at 900 with LinearEasing
             },
             repeatMode = RepeatMode.Restart
         ),
