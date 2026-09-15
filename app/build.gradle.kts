@@ -6,7 +6,8 @@ plugins {
 android {
     namespace = "net.ekmai.android.in"
     compileSdk = 36
-    ndkVersion = "30.0.14904198"
+    // Tanpa pin keras: CI + mesin berbeda pakai NDK/CMake terbaru yang terinstall.
+    // (Pin lama ndk 30.0.14904198 / cmake 4.1.2 tidak ada di SDK repository -> CI gagal.)
 
     defaultConfig {
         applicationId = "net.ekmai.android.in"
@@ -31,7 +32,6 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "4.1.2"
         }
     }
 
