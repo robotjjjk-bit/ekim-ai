@@ -1,6 +1,5 @@
 package net.ekmai.android.`in`.utilities
 
-import kotlinx.serialization.descriptors.PrimitiveKind
 import org.json.JSONArray
 import org.json.JSONObject
 

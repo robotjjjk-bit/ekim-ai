@@ -16,12 +16,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.14206865" "cmake;3.22.1"
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865 cmake;3.22.1'
 
       - name: Build release (arm64-only)
         run: |
@@ -29,9 +26,15 @@ jobs:
           ./gradlew :app:assembleRelease --stacktrace
 
       - name: Zip single APK
-        run: zip -j ekm_ai-arm64-release.zip app/build/outputs/apk/release/app-release.apk
+        run: |
+          set -e
+          ls -lh app/build/outputs/apk/release/
+          test -f app/build/outputs/apk/release/app-release.apk
+          zip -j ekm_ai-arm64-release.zip app/build/outputs/apk/release/app-release.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: ekm_ai-arm64-release
           path: ekm_ai-arm64-release.zip
+          if-no-files-found: error
+          retention-days: 14
